@@ -51,6 +51,11 @@ export const api = {
     }),
   extractJd: (url: string) =>
     req<{ jobDescription: string }>('/api/resume/extract-jd', { method: 'POST', body: JSON.stringify({ url }) }),
+  tailorPublic: (payload: { resumeText: string; jobInput: { type: 'jd'; content: string } | { type: 'url'; url: string } }) =>
+    req<{ id: string; resume: string; atsScore: AtsScore }>('/api/resume/tailor-public', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   analyzeAts: (payload: Record<string, unknown>) =>
     req<AtsScore>('/api/resume/analyze-ats', { method: 'POST', body: JSON.stringify(payload) }),
 

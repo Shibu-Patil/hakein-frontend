@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Wand2, Link2, Copy, Check } from 'lucide-react';
 import { api, getUserId, type AtsScore } from '../lib/api';
-import { Card, CardTitle, Btn, Field, inputCls, Spinner, ErrorBox, ScoreRing, Empty } from '../components/ui';
+import { Card, CardTitle, Btn, Field, inputCls, Spinner, ErrorBox, ScoreRing } from '../components/ui';
 
 export default function Resume() {
   const [userId] = useState(getUserId());
@@ -30,11 +30,9 @@ export default function Resume() {
     }
   }
 
+  const [myResume, setMyResume] = useState('');
+
   async function generate() {
-    if (!userId) {
-      setError('Finish Setup first so we have your profile.');
-      return;
-    }
     if (!jd.trim()) {
       setError('Paste a job description or fetch one from a link.');
       return;
@@ -44,12 +42,27 @@ export default function Resume() {
     setResume('');
     setAts(null);
     try {
-      const u = await api.getUser(userId);
-      const r = await api.generateResume({
-        userProfile: u.profile,
-        jobInput: { type: 'jd', content: jd.trim() },
-        options: { format: 'ats' },
-      });
+      let r;
+      if (userId) {
+        // Logged in: tailor from saved profile.
+        const u = await api.getUser(userId);
+        r = await api.generateResume({
+          userProfile: u.profile,
+          jobInput: { type: 'jd', content: jd.trim() },
+          options: { format: 'ats' },
+        });
+      } else {
+        // Public: tailor from pasted resume text. No login needed.
+        if (myResume.trim().length < 50) {
+          setError('Paste your current resume above (or finish Setup once).');
+          setLoading(false);
+          return;
+        }
+        r = await api.tailorPublic({
+          resumeText: myResume.trim(),
+          jobInput: { type: 'jd', content: jd.trim() },
+        });
+      }
       setResume(r.resume);
       setAts(r.atsScore);
     } catch (e) {
@@ -63,15 +76,21 @@ export default function Resume() {
     <div className="space-y-5">
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">Tailor a <span className="grad-text">resume</span></h1>
-        <p className="mt-1 text-sm text-slate-400">Paste a JD or job link — we use your saved profile.</p>
+        <p className="mt-1 text-sm text-slate-400">
+          {userId ? 'Paste a JD or job link — we use your saved profile.' : 'No login needed — paste your resume + a JD or job link.'}
+        </p>
       </div>
       <ErrorBox message={error} />
 
-      {!userId ? (
-        <Empty title="No profile yet" sub="Finish Setup once, then make resumes here." />
-      ) : (
-        <>
+      <>
+        {!userId && (
           <Card>
+            <Field label="Your current resume (paste full text)">
+              <textarea value={myResume} onChange={(e) => setMyResume(e.target.value)} rows={8} placeholder="Paste your current resume here…" className={inputCls} />
+            </Field>
+          </Card>
+        )}
+        <Card>
             <div className="mb-3 flex gap-2">
               <Btn variant={mode === 'jd' ? 'soft' : 'ghost'} onClick={() => setMode('jd')}>JD text</Btn>
               <Btn variant={mode === 'url' ? 'soft' : 'ghost'} onClick={() => setMode('url')}>Job link</Btn>
@@ -125,8 +144,7 @@ export default function Resume() {
               </Card>
             </div>
           )}
-        </>
-      )}
+      </>
     </div>
   );
 }
