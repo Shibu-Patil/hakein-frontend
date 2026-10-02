@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Wand2, Link2, Copy, Check } from 'lucide-react';
-import { api, getUserId, type AtsScore } from '../lib/api';
+import { Wand2, Link2, Copy, Check, Upload, FileDown } from 'lucide-react';
+import { api, getApiBase, getUserId, type AtsScore } from '../lib/api';
 import { Card, CardTitle, Btn, Field, inputCls, Spinner, ErrorBox, ScoreRing } from '../components/ui';
 
 export default function Resume() {
@@ -31,8 +31,56 @@ export default function Resume() {
   }
 
   const [myResume, setMyResume] = useState('');
+  const [srcMode, setSrcMode] = useState<'paste' | 'file'>('paste');
+  const [file, setFile] = useState<File | null>(null);
+  const [pdfReady, setPdfReady] = useState(false);
+
+  async function generateFromFile() {
+    if (!file) {
+      setError('Choose your resume file first (PDF / Word / txt).');
+      return;
+    }
+    const jobText = jd.trim();
+    const jobUrl = mode === 'url' ? url.trim() : '';
+    if (!jobText && !jobUrl) {
+      setError('Paste a JD or give a job link too.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setPdfReady(false);
+    try {
+      const form = new FormData();
+      form.append('resume', file);
+      if (jobText) form.append('jobText', jobText);
+      else form.append('jobUrl', jobUrl);
+      const res = await fetch(`${getApiBase()}/api/resume/tailor-file`, { method: 'POST', body: form });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `Failed (${res.status})` }));
+        throw new Error(body.error || `Failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tailored-resume.pdf';
+      a.click();
+      const score = Number(res.headers.get('X-ATS-Score'));
+      if (score) setAts({ score });
+      setResume('');
+      setPdfReady(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Generation failed');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function generate() {
+    // Public file path returns a PDF download instead of on-screen text.
+    if (!userId && srcMode === 'file') {
+      await generateFromFile();
+      return;
+    }
     if (!jd.trim()) {
       setError('Paste a job description or fetch one from a link.');
       return;
@@ -85,9 +133,26 @@ export default function Resume() {
       <>
         {!userId && (
           <Card>
-            <Field label="Your current resume (paste full text)">
-              <textarea value={myResume} onChange={(e) => setMyResume(e.target.value)} rows={8} placeholder="Paste your current resume here…" className={inputCls} />
-            </Field>
+            <div className="mb-3 flex gap-2">
+              <Btn variant={srcMode === 'paste' ? 'soft' : 'ghost'} onClick={() => setSrcMode('paste')}>Paste resume</Btn>
+              <Btn variant={srcMode === 'file' ? 'soft' : 'ghost'} onClick={() => setSrcMode('file')}>Upload PDF / Word</Btn>
+            </div>
+            {srcMode === 'paste' ? (
+              <Field label="Your current resume (paste full text)">
+                <textarea value={myResume} onChange={(e) => setMyResume(e.target.value)} rows={8} placeholder="Paste your current resume here…" className={inputCls} />
+              </Field>
+            ) : (
+              <Field label="Resume file (.pdf, .doc, .docx, .txt — max 5MB). You get back a PDF.">
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-600 px-4 py-3 text-sm text-slate-200 hover:border-cyan-400/60">
+                    <Upload size={16} />
+                    {file ? file.name : 'Choose file…'}
+                    <input type="file" accept=".pdf,.doc,.docx,.txt" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                  </label>
+                  {file && <span className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</span>}
+                </div>
+              </Field>
+            )}
           </Card>
         )}
         <Card>
@@ -111,10 +176,24 @@ export default function Resume() {
             )}
             <div className="mt-4">
               <Btn onClick={generate} disabled={loading} className="w-full py-3">
-                {loading ? <Spinner label="Tailoring…" /> : (<><Wand2 size={16} /> Make my resume</>)}
+                {loading
+                  ? <Spinner label="Tailoring…" />
+                  : (!userId && srcMode === 'file'
+                    ? (<><FileDown size={16} /> Make my resume (PDF)</>)
+                    : (<><Wand2 size={16} /> Make my resume</>))}
               </Btn>
             </div>
           </Card>
+
+          {pdfReady && (
+            <Card className="flex items-center gap-3 border-emerald-500/20">
+              <FileDown size={20} className="text-emerald-300" />
+              <div>
+                <p className="font-medium text-white">Your tailored PDF downloaded.</p>
+                <p className="text-sm text-slate-400">Check your downloads folder for tailored-resume.pdf{ats ? ` · ATS ${ats.score}` : ''}.</p>
+              </div>
+            </Card>
+          )}
 
           {(resume || ats) && (
             <div className="grid gap-5 md:grid-cols-[1fr_200px]">
