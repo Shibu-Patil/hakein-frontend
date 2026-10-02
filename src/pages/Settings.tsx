@@ -23,6 +23,10 @@ export default function Settings() {
   const [naEmail, setNaEmail] = useState('');
   const [naPass, setNaPass] = useState('');
 
+  const [answerMode, setAnswerMode] = useState<'assisted' | 'full-auto'>('assisted');
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [notifyTopic, setNotifyTopic] = useState('');
+
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -73,6 +77,30 @@ export default function Settings() {
       setNotice(`User ready. ID: ${r.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Create failed');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function saveNotifications() {
+    if (!userId) {
+      setError('Set User ID first');
+      return;
+    }
+    setBusy('notif');
+    setError('');
+    setNotice('');
+    try {
+      const u = await api.getUser(userId);
+      await api.savePreferences(userId, {
+        ...(u.preferences || {}),
+        autoAnswerMode: answerMode,
+        notifyEmail: notifyEmail || undefined,
+        notifyTopic: notifyTopic || undefined,
+      });
+      setNotice('Notifications saved. Assisted = ask you on phone. Full-auto = answer everything, no stops.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setBusy('');
     }
@@ -184,6 +212,27 @@ export default function Settings() {
             </Field>
             <Btn onClick={createUser} disabled={busy === 'user' || !email.includes('@')}>
               {busy === 'user' ? <Spinner label="Creating…" /> : (<><UserPlus size={16} /> Create / upsert user</>)}
+            </Btn>
+          </div>
+        </Card>
+
+        <Card>
+          <CardTitle sub="Assisted asks you on your phone. Full-auto never stops.">Answer mode + phone alerts (free)</CardTitle>
+          <div className="space-y-3">
+            <Field label="Screening-question mode">
+              <select value={answerMode} onChange={(e) => setAnswerMode(e.target.value as 'assisted' | 'full-auto')} className={inputCls}>
+                <option value="assisted">Assisted (recommended) — popup on phone when unsure</option>
+                <option value="full-auto">Full-auto — best-effort everything, never stop</option>
+              </select>
+            </Field>
+            <Field label="Notify email (Gmail app pops up on your phone)" hint="Free via Gmail SMTP. Needs GMAIL_USER + App Password on backend.">
+              <input value={notifyEmail} onChange={(e) => setNotifyEmail(e.target.value)} placeholder="you@gmail.com" className={inputCls} />
+            </Field>
+            <Field label="ntfy topic (instant push, app closed too)" hint="Install ntfy app, subscribe to this topic. Free.">
+              <input value={notifyTopic} onChange={(e) => setNotifyTopic(e.target.value)} placeholder="hakein-yourname-123" className={inputCls} />
+            </Field>
+            <Btn onClick={saveNotifications} disabled={busy === 'notif'}>
+              {busy === 'notif' ? <Spinner label="Saving…" /> : 'Save notifications'}
             </Btn>
           </div>
         </Card>

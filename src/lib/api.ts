@@ -101,7 +101,30 @@ export const api = {
     }),
   listApplications: (userId: string) =>
     req<{ count: number; applications: Application[] }>(`/api/applications/user/${userId}`),
+  retryApplication: (appId: string, payload: Record<string, unknown> = {}) =>
+    req<{ queued: boolean; jobId: string }>(`/api/applications/${appId}/retry`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  inbox: (userId: string) =>
+    req<{ count: number; items: InboxItem[] }>(`/api/users/${userId}/inbox`),
+  answerInbox: (userId: string, qid: string, payload: Record<string, unknown>) =>
+    req<{ ok: boolean; retried: boolean; remainingForApp: number }>(
+      `/api/users/${userId}/inbox/${qid}/answer`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    ),
 };
+
+export interface InboxItem {
+  id: string;
+  question: string;
+  fieldType: string;
+  options?: string[];
+  source: string;
+  status: string;
+  createdAt: string;
+  job?: { id: string; title: string; company: string; url: string; source: string } | null;
+}
 
 export interface AtsScore {
   score: number;
@@ -151,6 +174,9 @@ export interface UserDetail {
     autoApply: boolean;
     easyApplyOnly: boolean;
     sources: string[];
+    autoAnswerMode?: 'assisted' | 'full-auto';
+    notifyEmail?: string;
+    notifyTopic?: string;
   };
   linkedinEmail?: string;
   naukriEmail?: string;

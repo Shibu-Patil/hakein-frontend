@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Resume from './pages/Resume';
 import Jobs from './pages/Jobs';
 import Applications from './pages/Applications';
+import Inbox from './pages/Inbox';
 import QA from './pages/QA';
 import Settings from './pages/Settings';
 
@@ -16,6 +17,7 @@ function App() {
           <Route path="/resume" element={<Resume />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/applications" element={<Applications />} />
+          <Route path="/inbox" element={<Inbox />} />
           <Route path="/qa" element={<QA />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

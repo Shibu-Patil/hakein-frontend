@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -10,21 +10,34 @@ import {
   Zap,
   Menu,
   X,
+  Inbox,
 } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { api, getUserId } from '../lib/api';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/resume', label: 'Resume Builder', icon: FileText },
   { to: '/jobs', label: 'Jobs', icon: Briefcase },
   { to: '/applications', label: 'Applications', icon: Send },
+  { to: '/inbox', label: 'Inbox', icon: Inbox, badge: true },
   { to: '/qa', label: 'Screening Q&A', icon: MessagesSquare },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [inboxCount, setInboxCount] = useState(0);
   const loc = useLocation();
+
+  useEffect(() => {
+    const uid = getUserId();
+    if (!uid) return;
+    const poll = () => api.inbox(uid).then((r) => setInboxCount(r.count)).catch(() => {});
+    poll();
+    const t = setInterval(poll, 60000);
+    return () => clearInterval(t);
+  }, [loc.pathname]);
   return (
     <div className="grid-bg min-h-full">
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-[#070b16]/85 backdrop-blur">
@@ -61,6 +74,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 <n.icon size={16} />
                 {n.label}
+                {'badge' in n && n.badge && inboxCount > 0 && (
+                  <span className="rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-black">
+                    {inboxCount}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -86,6 +104,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 >
                   <n.icon size={16} />
                   {n.label}
+                  {'badge' in n && n.badge && inboxCount > 0 && (
+                    <span className="ml-auto rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-black">
+                      {inboxCount}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
