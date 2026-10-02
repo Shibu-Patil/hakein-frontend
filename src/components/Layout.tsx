@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Home as HomeIcon, ClipboardList, Inbox as InboxIcon, Zap } from 'lucide-react';
+import { Home as HomeIcon, ClipboardList, Inbox as InboxIcon, FileText, Zap } from 'lucide-react';
 import { cn } from '../lib/cn';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Link>
           <nav className="ml-auto flex items-center gap-1">
             <NavBtn to="/" icon={<HomeIcon size={16} />} label="Home" />
+            <NavBtn to="/resume" icon={<FileText size={16} />} label="Resume" />
             <NavBtn to="/setup" icon={<ClipboardList size={16} />} label="Setup" />
             <NavBtn to="/inbox" icon={<InboxIcon size={16} />} label="Inbox" />
           </nav>
