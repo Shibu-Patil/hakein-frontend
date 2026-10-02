@@ -118,12 +118,11 @@ export default function Inbox() {
         </div>
       )}
       <Card>
-        <CardTitle sub="Get these on your phone even with this app closed">Phone alerts (free)</CardTitle>
-        <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-300">
-          <li>Email: backend sends from Gmail to your notify email → Gmail app pops a notification.</li>
-          <li>Push: install <b>ntfy</b> app, subscribe to your topic → instant popup.</li>
-          <li>Set both in Settings → Notifications, plus <b>full-auto</b> mode to skip questions entirely.</li>
-        </ol>
+        <CardTitle sub="No app download needed">How you get told (free)</CardTitle>
+        <p className="text-sm text-slate-300">
+          You get a plain email the moment a question lands here — your Gmail app pops it on your phone even
+          with this page closed. Answer here and the apply retries by itself.
+        </p>
       </Card>
     </div>
   );
