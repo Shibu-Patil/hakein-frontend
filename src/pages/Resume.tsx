@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Wand2, Link2, Copy, Check, Upload, FileDown } from 'lucide-react';
-import { api, getApiBase, getUserId, type AtsScore } from '../lib/api';
+import { api, getApiBase, getUserId, formatTokens, type AtsScore, type TokenUsage } from '../lib/api';
 import { Card, CardTitle, Btn, Field, inputCls, Spinner, ErrorBox, ScoreRing } from '../components/ui';
 
 export default function Resume() {
@@ -13,6 +13,7 @@ export default function Resume() {
   const [error, setError] = useState('');
   const [resume, setResume] = useState('');
   const [ats, setAts] = useState<AtsScore | null>(null);
+  const [usage, setUsage] = useState<TokenUsage | { input: number; output: number; total: number } | null>(null);
   const [copied, setCopied] = useState(false);
 
   async function fetchJd() {
@@ -49,6 +50,7 @@ export default function Resume() {
     setLoading(true);
     setError('');
     setPdfReady(false);
+    setUsage(null);
     try {
       const form = new FormData();
       form.append('resume', file);
@@ -66,6 +68,10 @@ export default function Resume() {
       a.click();
       const score = Number(res.headers.get('X-ATS-Score'));
       if (score) setAts({ score });
+      const tIn = Number(res.headers.get('X-Tokens-In'));
+      const tOut = Number(res.headers.get('X-Tokens-Out'));
+      const tTotal = Number(res.headers.get('X-Tokens-Total'));
+      setUsage(tTotal ? { input: tIn || 0, output: tOut || 0, total: tTotal } : null);
       setResume('');
       setPdfReady(true);
     } catch (e) {
@@ -89,6 +95,7 @@ export default function Resume() {
     setError('');
     setResume('');
     setAts(null);
+    setUsage(null);
     try {
       let r;
       if (userId) {
@@ -113,6 +120,7 @@ export default function Resume() {
       }
       setResume(r.resume);
       setAts(r.atsScore);
+      setUsage(r.usage || null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Generation failed');
     } finally {
@@ -191,6 +199,7 @@ export default function Resume() {
               <div>
                 <p className="font-medium text-white">Your tailored PDF downloaded.</p>
                 <p className="text-sm text-slate-400">Check your downloads folder for tailored-resume.pdf{ats ? ` · ATS ${ats.score}` : ''}.</p>
+                {formatTokens(usage) && <p className="mt-0.5 text-xs text-slate-500">{formatTokens(usage)}</p>}
               </div>
             </Card>
           )}
@@ -205,6 +214,7 @@ export default function Resume() {
                   </Btn>
                 </div>
                 <pre className="resume-output max-h-[480px] overflow-auto rounded-xl bg-slate-950/70 p-4 text-sm leading-relaxed text-slate-200">{resume}</pre>
+                {formatTokens(usage) && <p className="mt-2 text-xs text-slate-500">{formatTokens(usage)}</p>}
               </Card>
               <Card className="flex flex-col items-center justify-center gap-2 text-center">
                 {ats ? (

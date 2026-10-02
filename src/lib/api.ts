@@ -45,14 +45,14 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => req<{ status: string; timestamp: string }>('/api/health'),
   generateResume: (payload: Record<string, unknown>) =>
-    req<{ id: string; resume: string; analysis: unknown; atsScore: AtsScore; metadata: unknown }>('/api/resume/generate', {
+    req<{ id: string; resume: string; analysis: unknown; atsScore: AtsScore; usage?: TokenUsage; metadata: unknown }>('/api/resume/generate', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   extractJd: (url: string) =>
     req<{ jobDescription: string }>('/api/resume/extract-jd', { method: 'POST', body: JSON.stringify({ url }) }),
   tailorPublic: (payload: { resumeText: string; jobInput: { type: 'jd'; content: string } | { type: 'url'; url: string } }) =>
-    req<{ id: string; resume: string; atsScore: AtsScore }>('/api/resume/tailor-public', {
+    req<{ id: string; resume: string; atsScore: AtsScore; usage?: TokenUsage }>('/api/resume/tailor-public', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
@@ -136,6 +136,18 @@ export interface AtsScore {
   breakdown?: Record<string, number>;
   missingKeywords?: string[];
   recommendations?: string[];
+}
+
+export interface TokenUsage {
+  steps: Array<{ step: string; model?: string; input: number; output: number; total: number; estimated?: boolean }>;
+  total: { input: number; output: number; total: number };
+}
+
+export function formatTokens(u?: TokenUsage | { input: number; output: number; total: number } | null): string | null {
+  if (!u) return null;
+  const t = typeof (u as TokenUsage).total === 'object' ? (u as TokenUsage).total : (u as { input: number; output: number; total: number });
+  if (!t || !t.total) return null;
+  return `${t.total.toLocaleString()} tokens (${t.input.toLocaleString()} in / ${t.output.toLocaleString()} out)`;
 }
 
 export interface Job {
