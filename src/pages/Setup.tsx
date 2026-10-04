@@ -23,6 +23,8 @@ export default function Setup() {
   const [liPass, setLiPass] = useState('');
   const [naEmail, setNaEmail] = useState('');
   const [naPass, setNaPass] = useState('');
+  const [gmail, setGmail] = useState('');
+  const [gmailAppPass, setGmailAppPass] = useState('');
   const [quick, setQuick] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -57,10 +59,11 @@ export default function Setup() {
           notifyEmail: email,
         },
       });
-      // 2. Portal logins (encrypted)
+      // 2. Portal logins + Gmail (all encrypted per-user in DB)
       const creds: Record<string, string> = {};
       if (liEmail && liPass) { creds.linkedinEmail = liEmail; creds.linkedinPassword = liPass; }
       if (naEmail && naPass) { creds.naukriEmail = naEmail; creds.naukriPassword = naPass; }
+      if (gmail && gmailAppPass) { creds.gmailUser = gmail; creds.gmailAppPassword = gmailAppPass; }
       await api.saveCredentials(u.id, creds);
       // 3. Quick answers (whatever you fill — rest is automatic)
       const qa: Record<string, string> = {};
@@ -122,6 +125,23 @@ export default function Setup() {
             <input type="password" value={naPass} onChange={(e) => setNaPass(e.target.value)} placeholder="••••••" className={inputCls} />
           </Field>
         </div>
+      </Card>
+
+      <Card>
+        <CardTitle sub="Lets us pass LinkedIn's email-code check alone + alerts on your phone. Stored encrypted, per-user.">Gmail (recommended)</CardTitle>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Gmail address">
+            <input value={gmail} onChange={(e) => setGmail(e.target.value)} placeholder="you@gmail.com" className={inputCls} />
+          </Field>
+          <Field label="Google app password (not your login password)">
+            <input type="password" value={gmailAppPass} onChange={(e) => setGmailAppPass(e.target.value)} placeholder="xxxx xxxx xxxx xxxx" className={inputCls} />
+          </Field>
+        </div>
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-xs text-slate-400">
+          <li>Open <b>myaccount.google.com</b> → Security → turn <b>2-Step Verification ON</b>.</li>
+          <li>Same page → <b>App passwords</b> → name it <b>Hakein</b> → Create.</li>
+          <li>Paste the 16-letter code above. Done — never needed again.</li>
+        </ol>
       </Card>
 
       <Card>
