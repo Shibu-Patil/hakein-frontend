@@ -17,6 +17,7 @@ const QUICK = [
 export default function Setup() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [keywords, setKeywords] = useState('react, node.js');
   const [locations, setLocations] = useState('Bengaluru, Remote');
   const [liEmail, setLiEmail] = useState('');
@@ -41,13 +42,17 @@ export default function Setup() {
       setError('Add at least one login — LinkedIn or Naukri (both is best).');
       return;
     }
+    if (!phone.trim()) {
+      setError('Add your mobile number — LinkedIn Easy Apply requires it on step 1.');
+      return;
+    }
     setSaving(true);
     try {
       // 1. Account + job taste
       const u = await api.createUser({
         email,
         name: name || undefined,
-        profile: { name: name || email.split('@')[0], email },
+        profile: { name: name || email.split('@')[0], email, phone: phone.trim() },
         preferences: {
           keywords: keywords.split(',').map((s) => s.trim()).filter(Boolean),
           locations: locations.split(',').map((s) => s.trim()).filter(Boolean),
@@ -99,6 +104,9 @@ export default function Setup() {
           </Field>
           <Field label="Name">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className={inputCls} />
+          </Field>
+          <Field label="Mobile number (for Easy Apply)">
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" className={inputCls} />
           </Field>
           <Field label="Skills to match (comma separated)">
             <input value={keywords} onChange={(e) => setKeywords(e.target.value)} className={inputCls} />
